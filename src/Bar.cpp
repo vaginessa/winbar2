@@ -2,6 +2,27 @@
 
 #include <stdio.h>
 
+void Bar::triggerEvent(int eventType, int xCoord) {
+    blockMutex->lock();
+
+    // Find block index
+    int width = this->width;
+    int blockIdx;
+    for (blockIdx = blocks->size() - 1; blockIdx >= 0; blockIdx--) {
+        if (xCoord >= width - blocks->at(blockIdx)->_width && xCoord < width) {
+            break;
+        } else {
+            width -= blocks->at(blockIdx)->_width;
+        }
+    }
+    if (blockIdx < 0) return;
+
+    // Add to event queue
+    blocks->at(blockIdx)->events.push(eventType);
+
+    blockMutex->unlock();
+}
+
 LRESULT CALLBACK Bar::static_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     Bar* bar = (Bar*)GetWindowLong(hwnd, GWLP_USERDATA);
     if (!bar) return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -32,6 +53,7 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         // Draw blocks
         SIZE textSize;
         Block* block;
+        blockMutex->lock();
         for (int blockIdx = blocks->size() - 1; blockIdx >= 0; blockIdx--) {
             block = blocks->at(blockIdx);
 
@@ -45,6 +67,7 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             block->_width = textSize.cx;
             drawRect.right -= textSize.cx;
         }
+        blockMutex->unlock();
 
         // End
         EndPaint(hwnd, &ps);
@@ -54,9 +77,9 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     } else if (msg == WM_SETCURSOR) {
         SetCursor(cursor);
     } else if (msg == WM_LBUTTONDOWN) {
-        // todo event
+        triggerEvent(BLOCK_EVENT_MOUSE_DOWN, GET_X_LPARAM(lParam));
     } else if (msg == WM_LBUTTONUP) {
-        // todo event
+        triggerEvent(BLOCK_EVENT_MOUSE_UP, GET_X_LPARAM(lParam));
     }
 
     return DefWindowProc(hwnd, msg, wParam, lParam);
@@ -151,8 +174,21 @@ void Bar::_windowThread() {
 
         // todo: See if taskbar got resized
 
-        // todo: Redraw if needed
+        apiMutex.lock(); // API
+        // Font change
+        if (shouldChangeFont) {
+            DeleteObject(font);
+            font = CreateFont(newFontSize, 0, 0, 0, FW_NORMAL, 0, 0, 0, 0, 0, 0, 0, 0, newFont.c_str());
+            shouldRedraw = true;
+            shouldChangeFont = false;
+        }
 
+        // Redraw if needed
+        if (shouldRedraw) {
+            RedrawWindow(winbarWnd, 0, 0, RDW_UPDATENOW | RDW_INVALIDATE);
+            shouldRedraw = false;
+        }
+        apiMutex.unlock(); // /API
 
         // Chill
         Sleep(1);
@@ -167,6 +203,20 @@ void Bar::_windowThread() {
 
 void windowThreadDelegate(Bar* po) {
     po->_windowThread();
+}
+
+void Bar::redraw() {
+    apiMutex.lock();
+    shouldRedraw = true;
+    apiMutex.unlock();
+}
+
+void Bar::setFont(std::string font, int fontSize) {
+    apiMutex.lock();
+    shouldChangeFont = true;
+    newFont = font;
+    newFontSize = fontSize;
+    apiMutex.unlock();
 }
 
 Bar::Bar(std::vector<Block*>* blocks, std::mutex* blockMutex) {

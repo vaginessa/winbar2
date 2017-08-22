@@ -1,5 +1,11 @@
 #include "Block.h"
 
+extern "C" {
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+}
+
 Block::Block() {
-    //ctor
+    luaEventRef = LUA_NOREF;
 }
