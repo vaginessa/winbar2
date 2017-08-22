@@ -7,18 +7,15 @@ void Bar::triggerEvent(int eventType, int xCoord) {
 
     // Find block index
     int width = this->width;
-    int blockIdx;
-    for (blockIdx = blocks->size() - 1; blockIdx >= 0; blockIdx--) {
+    for (int blockIdx = blocks->size() - 1; blockIdx >= 0; blockIdx--) {
         if (xCoord >= width - blocks->at(blockIdx)->_width && xCoord < width) {
+            // Add to event queue
+            blocks->at(blockIdx)->events.push(eventType);
             break;
         } else {
             width -= blocks->at(blockIdx)->_width;
         }
     }
-    if (blockIdx < 0) return;
-
-    // Add to event queue
-    blocks->at(blockIdx)->events.push(eventType);
 
     blockMutex->unlock();
 }
@@ -42,13 +39,18 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
 
+        // Create screen buffer
+        HDC hdcBuffer = CreateCompatibleDC(hdc);
+        HBITMAP hBitmapBuffer = CreateCompatibleBitmap(hdc, width, height);
+        SelectObject(hdcBuffer, hBitmapBuffer);
+
         // Clear
-        SelectObject(hdc, GetStockObject(BLACK_BRUSH));
-        Rectangle(hdc, drawRect.left, drawRect.top, drawRect.right, drawRect.bottom);
+        SelectObject(hdcBuffer, GetStockObject(BLACK_BRUSH));
+        Rectangle(hdcBuffer, drawRect.left, drawRect.top, drawRect.right, drawRect.bottom);
 
         // Text options
-        SetBkColor(hdc, 0);
-        SelectObject(hdc, font);
+        SetBkColor(hdcBuffer, 0);
+        SelectObject(hdcBuffer, font);
 
         // Draw blocks
         SIZE textSize;
@@ -58,16 +60,23 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             block = blocks->at(blockIdx);
 
             // Draw
-            SetTextColor(hdc, block->color);
-            DrawTextW(hdc, block->text.c_str(), -1, &drawRect, DT_SINGLELINE | DT_NOCLIP | DT_RIGHT | DT_VCENTER | DT_NOPREFIX);
+            SetTextColor(hdcBuffer, block->color);
+            DrawTextW(hdcBuffer, block->text.c_str(), -1, &drawRect, DT_SINGLELINE | DT_NOCLIP | DT_RIGHT | DT_VCENTER | DT_NOPREFIX);
 
             // Place next text
-            GetTextExtentPoint32W(hdc, block->text.c_str(), block->text.length(), &textSize);
+            GetTextExtentPoint32W(hdcBuffer, block->text.c_str(), block->text.length(), &textSize);
             block->_rx = drawRect.right;
             block->_width = textSize.cx;
             drawRect.right -= textSize.cx;
         }
         blockMutex->unlock();
+
+        // Copy
+        BitBlt(hdc, 0, 0, width, height, hdcBuffer, 0, 0, SRCCOPY);
+
+        // Free screen buffer
+        DeleteDC(hdcBuffer);
+        DeleteObject (hBitmapBuffer);
 
         // End
         EndPaint(hwnd, &ps);
@@ -201,7 +210,7 @@ void Bar::_windowThread() {
 
         // Redraw if needed
         if (shouldRedraw) {
-            RedrawWindow(winbarWnd, 0, 0, RDW_UPDATENOW | RDW_INVALIDATE);
+            RedrawWindow(winbarWnd, 0, 0, RDW_INVALIDATE);
             shouldRedraw = false;
         }
         apiMutex.unlock(); // /API

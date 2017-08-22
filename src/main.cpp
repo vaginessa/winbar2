@@ -223,6 +223,7 @@ int main() {
         }
 
         // Block events
+        // todo: handle more than one event per tick
         int r = LUA_NOREF;
         int evt = -1;
         blockMutex.lock();
