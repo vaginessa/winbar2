@@ -33,6 +33,7 @@ private:
     HCURSOR cursor;
     HFONT font;
     int width, height;
+    bool running;
 
     static LRESULT CALLBACK static_wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
     LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);

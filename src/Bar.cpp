@@ -73,7 +73,7 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         EndPaint(hwnd, &ps);
         return 0;
     } else if (msg == WM_DESTROY) {
-        // todo: die
+        running = false;
     } else if (msg == WM_SETCURSOR) {
         SetCursor(cursor);
     } else if (msg == WM_LBUTTONDOWN) {
@@ -165,14 +165,30 @@ void Bar::_windowThread() {
 
     // Start window loop
     MSG msg;
-    while (1) { // todo: don't run forever
+    int ntbWidth, ntbHeight;
+    running = true;
+    while (running) {
         // Handle messages
         while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE) > 0) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
 
-        // todo: See if taskbar got resized
+        // See if taskbar got resized
+        // todo: See if we can listen to taskbar directly
+        GetWindowRect(taskbarWnd, &rc);
+        ntbWidth = rc.right - rc.left;
+        ntbHeight = rc.bottom - rc.top;
+        if (taskbarWidth != ntbWidth || taskbarHeight != ntbHeight) {
+            taskbarWidth = ntbWidth;
+            taskbarHeight = ntbHeight;
+            width = taskbarWidth / 2;
+            height = taskbarHeight;
+            SetWindowPos(winbarWnd, 0, taskbarWidth - width, taskbarHeight - height, width, height, 0);
+            apiMutex.lock();
+            shouldRedraw = true;
+            apiMutex.unlock();
+        }
 
         apiMutex.lock(); // API
         // Font change

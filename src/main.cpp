@@ -12,7 +12,6 @@ extern "C" {
 
 #include "Bar.h"
 #include "Block.h"
-#include "default_winbar_lua.h"
 
 struct timer {
     long long time;
@@ -47,7 +46,6 @@ int l_timer(lua_State* L) {
 
     // Schedule
     long long endTime = mstime() + lua_tointeger(L, 1);
-
     timers.push_back(timer{endTime, r});
     return 0;
 }
@@ -84,7 +82,7 @@ int l_BLOCK_SetColor(lua_State* L) {
 
     // Set
     blockMutex.lock();
-    blocks.at(blockIdx)->color = lua_tointeger(L, 2) + lua_tointeger(L, 3) * 256 + lua_tointeger(L, 4) * 65536;
+    blocks.at(blockIdx)->color = RGB(lua_tointeger(L, 2), lua_tointeger(L, 3), + lua_tointeger(L, 4));
     blockMutex.unlock();
     bar->redraw();
     return 0;
@@ -120,6 +118,7 @@ int l_BAR_CreateBlock(lua_State* L) {
     blocks.push_back(new Block());
     blockMutex.unlock();
 
+    // todo: learn the correct way to do this (metatables or something)
     lua_newtable(L);
     lua_pushinteger(L, 1);
     lua_pushinteger(L, blockIdx);
@@ -147,7 +146,8 @@ int l_BAR_SetFont(lua_State* L) {
 
 int l_BAR_ClearBlocks(lua_State* L) {
     blockMutex.lock();
-    blocks.clear(); // todo: delete
+    for (int i = 0; i < blocks.size(); i++) delete blocks.at(i); // todo: invalidate old lua references
+    blocks.clear();
     blockMutex.unlock();
     bar->redraw();
     return 0;
@@ -157,10 +157,13 @@ int main() {
     // Create file if doesn't exists
     DWORD dwAttrib = GetFileAttributes("winbar.lua");
     if (dwAttrib == INVALID_FILE_ATTRIBUTES || (dwAttrib & FILE_ATTRIBUTE_DIRECTORY)) {
-        FILE* f = fopen("winbar.lua", "w");
-        fwrite(default_winbar_lua, default_winbar_lua_len, 1, f);
-        fclose(f);
-        printf("Created default winbar.lua\n");
+        printf("No winbar.lua!\n");
+        return -1;
+        // todo: default file
+        //FILE* f = fopen("winbar.lua", "w");
+        //fwrite(default_winbar_lua, default_winbar_lua_len, 1, f);
+        //fclose(f);
+        //printf("Created default winbar.lua\n");
     }
 
     // Create bar
@@ -169,6 +172,12 @@ int main() {
     // Init lua
     lua_State* L = luaL_newstate();
     luaL_openlibs(L);
+
+    // Add global event stuff
+    lua_pushinteger(L, BLOCK_EVENT_MOUSE_DOWN);
+    lua_setglobal(L, "BLOCK_EVENT_MOUSE_DOWN");
+    lua_pushinteger(L, BLOCK_EVENT_MOUSE_UP);
+    lua_setglobal(L, "BLOCK_EVENT_MOUSE_UP");
 
     // Add timer global
     lua_pushcfunction(L, l_timer);
