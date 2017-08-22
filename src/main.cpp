@@ -62,9 +62,12 @@ int l_BLOCK_SetText(lua_State* L) {
 
     // Set
     blockMutex.lock();
-    blocks.at(blockIdx)->text = s2ws(lua_tostring(L, 2));
+    std::wstring str = s2ws(lua_tostring(L, 2));
+    if (blocks.at(blockIdx)->text != str) {
+        blocks.at(blockIdx)->text = str;
+        bar->redraw();
+    }
     blockMutex.unlock();
-    bar->redraw();
     return 0;
 }
 
@@ -82,9 +85,12 @@ int l_BLOCK_SetColor(lua_State* L) {
 
     // Set
     blockMutex.lock();
-    blocks.at(blockIdx)->color = RGB(lua_tointeger(L, 2), lua_tointeger(L, 3), + lua_tointeger(L, 4));
+    COLORREF col = RGB(lua_tointeger(L, 2), lua_tointeger(L, 3), + lua_tointeger(L, 4));
+    if (blocks.at(blockIdx)->color != col) {
+        blocks.at(blockIdx)->color = col;
+        bar->redraw();
+    }
     blockMutex.unlock();
-    bar->redraw();
     return 0;
 }
 
@@ -146,7 +152,7 @@ int l_BAR_SetFont(lua_State* L) {
 
 int l_BAR_ClearBlocks(lua_State* L) {
     blockMutex.lock();
-    for (int i = 0; i < blocks.size(); i++) delete blocks.at(i); // todo: invalidate old lua references
+    for (size_t i = 0; i < blocks.size(); i++) delete blocks.at(i); // todo: invalidate old lua references
     blocks.clear();
     blockMutex.unlock();
     bar->redraw();
