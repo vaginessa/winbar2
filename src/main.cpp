@@ -159,11 +159,21 @@ int l_BAR_ClearBlocks(lua_State* L) {
     return 0;
 }
 
+int handleLuaError(lua_State* L, int result) {
+    if (result) {
+        std::string errormsg = "Error running winbar.lua:\n    ";
+        errormsg.append(lua_tostring(L, -1));
+        MessageBoxA(0, errormsg.c_str(), "winbar2", 16);
+        return -1;
+    }
+    return 0;
+}
+
 int main() {
     // Create file if doesn't exists
     DWORD dwAttrib = GetFileAttributes("winbar.lua");
     if (dwAttrib == INVALID_FILE_ATTRIBUTES || (dwAttrib & FILE_ATTRIBUTE_DIRECTORY)) {
-        printf("No winbar.lua!\n");
+        MessageBoxA(0, "No winbar.lua!\n", "winbar2", 16);
         return -1;
         // todo: default file
         //FILE* f = fopen("winbar.lua", "w");
@@ -203,11 +213,7 @@ int main() {
     lua_setglobal(L, "Bar");
 
     // Run file
-    int result = luaL_dofile(L, "winbar.lua");
-    if (result) {
-        printf("Error running winbar.lua:\n    %s\n", lua_tostring(L, -1));
-        return -1;
-    }
+    if (handleLuaError(L, luaL_dofile(L, "winbar.lua"))) return -1;
 
     // Run main loop
     while (1) {
@@ -216,7 +222,7 @@ int main() {
             if (mstime() >= timers.at(i).time) {
                 int r = timers.at(i).luaRef;
                 lua_rawgeti(L, LUA_REGISTRYINDEX, r);
-                lua_call(L, 0, 0);
+                if (handleLuaError(L, lua_pcall(L, 0, 0, 0))) return -1;
                 luaL_unref(L, LUA_REGISTRYINDEX, r);
                 timers.erase(timers.begin() + i);
             }
@@ -242,7 +248,7 @@ int main() {
         if (evt >= 0) {
             lua_rawgeti(L, LUA_REGISTRYINDEX, r);
             lua_pushinteger(L, evt);
-            lua_call(L, 1, 0);
+            if (handleLuaError(L, lua_pcall(L, 1, 0, 0))) return -1;
         }
 
         // Chill
