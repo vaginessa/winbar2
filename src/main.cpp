@@ -169,7 +169,11 @@ int handleLuaError(lua_State* L, int result) {
     return 0;
 }
 
-int main() {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+    // Create a new hidden console
+    AllocConsole();
+    ShowWindow(FindWindowA("ConsoleWindowClass", 0), SW_HIDE);
+
     // Create file if doesn't exists
     DWORD dwAttrib = GetFileAttributes("winbar.lua");
     if (dwAttrib == INVALID_FILE_ATTRIBUTES || (dwAttrib & FILE_ATTRIBUTE_DIRECTORY)) {
