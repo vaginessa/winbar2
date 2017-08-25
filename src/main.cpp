@@ -38,8 +38,8 @@ long long mstime() {
 }
 
 int l_timer(lua_State* L) {
-    if (!lua_isinteger(L, 1)) luaL_argerror(L, 1, "not an integer");
-    if (!lua_isfunction(L, 2)) luaL_argerror(L, 2, "not a function");
+    if (!lua_isinteger(L, 1)) return luaL_argerror(L, 1, "not an integer");
+    if (!lua_isfunction(L, 2)) return luaL_argerror(L, 2, "not a function");
 
     // Get function ref
     lua_pushvalue(L, 2);
@@ -72,12 +72,12 @@ int getBlockIdx(int blockID) {
 
 int l_BLOCK_SetText(lua_State* L) {
     // Args
-    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
-    if (!lua_isstring(L, 2)) luaL_argerror(L, 2, "not a string");
+    if (!lua_istable(L, 1)) return luaL_argerror(L, 1, "not a table");
+    if (!lua_isstring(L, 2)) return luaL_argerror(L, 2, "not a string");
 
     // Get block index
     int blockIdx = getBlockIdx(getBlockID(L, 1));
-    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+    if (blockIdx < 0) return luaL_argerror(L, 1, "not a block");
 
     // Set
     blockMutex.lock();
@@ -92,14 +92,14 @@ int l_BLOCK_SetText(lua_State* L) {
 
 int l_BLOCK_SetColor(lua_State* L) {
     // Args
-    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
-    if (!lua_isinteger(L, 2)) luaL_argerror(L, 2, "not an integer");
-    if (!lua_isinteger(L, 3)) luaL_argerror(L, 3, "not an integer");
-    if (!lua_isinteger(L, 4)) luaL_argerror(L, 4, "not an integer");
+    if (!lua_istable(L, 1)) return luaL_argerror(L, 1, "not a table");
+    if (!lua_isinteger(L, 2)) return luaL_argerror(L, 2, "not an integer");
+    if (!lua_isinteger(L, 3)) return luaL_argerror(L, 3, "not an integer");
+    if (!lua_isinteger(L, 4)) return luaL_argerror(L, 4, "not an integer");
 
     // Get block index
     int blockIdx = getBlockIdx(getBlockID(L, 1));
-    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+    if (blockIdx < 0) return luaL_argerror(L, 1, "not a block");
 
     // Set
     blockMutex.lock();
@@ -114,12 +114,12 @@ int l_BLOCK_SetColor(lua_State* L) {
 
 int l_BLOCK_SetHandler(lua_State* L) {
     // Args
-    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
-    if (!lua_isfunction(L, 2)) luaL_argerror(L, 2, "not a function");
+    if (!lua_istable(L, 1)) return luaL_argerror(L, 1, "not a table");
+    if (!lua_isfunction(L, 2)) return luaL_argerror(L, 2, "not a function");
 
     // Get block index
     int blockIdx = getBlockIdx(getBlockID(L, 1));
-    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+    if (blockIdx < 0) return luaL_argerror(L, 1, "not a block");
 
     blockMutex.lock(); // block
     // Unref previous
@@ -136,11 +136,11 @@ int l_BLOCK_SetHandler(lua_State* L) {
 
 int l_BLOCK_Delete(lua_State* L) {
     // Args
-    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
+    if (!lua_istable(L, 1)) return luaL_argerror(L, 1, "not a table");
 
     // Get block index
     int blockIdx = getBlockIdx(getBlockID(L, 1));
-    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+    if (blockIdx < 0) return luaL_argerror(L, 1, "not a block");
 
     // Delete
     blockMutex.lock();
@@ -155,11 +155,11 @@ int l_BLOCK_Delete(lua_State* L) {
 
 int l_BLOCK_Show(lua_State* L) {
     // Args
-    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
+    if (!lua_istable(L, 1)) return luaL_argerror(L, 1, "not a table");
 
     // Get block index
     int blockIdx = getBlockIdx(getBlockID(L, 1));
-    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+    if (blockIdx < 0) return luaL_argerror(L, 1, "not a block");
 
     // Set
     blockMutex.lock();
@@ -173,11 +173,11 @@ int l_BLOCK_Show(lua_State* L) {
 
 int l_BLOCK_Hide(lua_State* L) {
     // Args
-    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
+    if (!lua_istable(L, 1)) return luaL_argerror(L, 1, "not a table");
 
     // Get block index
     int blockIdx = getBlockIdx(getBlockID(L, 1));
-    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+    if (blockIdx < 0) return luaL_argerror(L, 1, "not a block");
 
     // Set
     blockMutex.lock();
@@ -228,8 +228,8 @@ int l_BAR_CreateBlock(lua_State* L) {
 
 int l_BAR_SetFont(lua_State* L) {
     // Args
-    if (!lua_isstring(L, 1)) luaL_argerror(L, 1, "not a string");
-    if (!lua_isinteger(L, 2)) luaL_argerror(L, 2, "not an integer");
+    if (!lua_isstring(L, 1)) return luaL_argerror(L, 1, "not a string");
+    if (!lua_isinteger(L, 2)) return luaL_argerror(L, 2, "not an integer");
 
     // Set
     bar->setFont(lua_tostring(L, 1), lua_tointeger(L, 2));
