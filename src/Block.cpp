@@ -6,6 +6,10 @@ extern "C" {
 #include <lualib.h>
 }
 
-Block::Block() {
+Block::Block(int id) {
+    this->id = id;
+    text = std::wstring();
+    color = 0xffffff;
     luaEventRef = LUA_NOREF;
+    hidden = false;
 }

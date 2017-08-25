@@ -18,6 +18,7 @@ struct timer {
     int luaRef;
 };
 
+int blockIdCC = 10000;
 Bar* bar;
 std::vector<Block*> blocks;
 std::mutex blockMutex;
@@ -50,15 +51,33 @@ int l_timer(lua_State* L) {
     return 0;
 }
 
+int getBlockID(lua_State* L, int stackIndex) {
+    lua_rawgeti(L, stackIndex, 1);
+    int blockID = lua_tointeger(L, -1);
+    lua_pop(L, 1);
+    return blockID;
+}
+
+int getBlockIdx(int blockID) {
+    blockMutex.lock();
+    for (size_t i = 0; i < blocks.size(); i++) {
+        if (blocks.at(i)->id == blockID) {
+            blockMutex.unlock();
+            return i;
+        }
+    }
+    blockMutex.unlock();
+    return -1;
+}
+
 int l_BLOCK_SetText(lua_State* L) {
     // Args
     if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
     if (!lua_isstring(L, 2)) luaL_argerror(L, 2, "not a string");
 
     // Get block index
-    lua_rawgeti(L, 1, 1);
-    int blockIdx = lua_tointeger(L, -1);
-    lua_pop(L, 1);
+    int blockIdx = getBlockIdx(getBlockID(L, 1));
+    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
 
     // Set
     blockMutex.lock();
@@ -79,9 +98,8 @@ int l_BLOCK_SetColor(lua_State* L) {
     if (!lua_isinteger(L, 4)) luaL_argerror(L, 4, "not an integer");
 
     // Get block index
-    lua_rawgeti(L, 1, 1);
-    int blockIdx = lua_tointeger(L, -1);
-    lua_pop(L, 1);
+    int blockIdx = getBlockIdx(getBlockID(L, 1));
+    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
 
     // Set
     blockMutex.lock();
@@ -100,9 +118,8 @@ int l_BLOCK_SetHandler(lua_State* L) {
     if (!lua_isfunction(L, 2)) luaL_argerror(L, 2, "not a function");
 
     // Get block index
-    lua_rawgeti(L, 1, 1);
-    int blockIdx = lua_tointeger(L, -1);
-    lua_pop(L, 1);
+    int blockIdx = getBlockIdx(getBlockID(L, 1));
+    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
 
     blockMutex.lock(); // block
     // Unref previous
@@ -114,20 +131,76 @@ int l_BLOCK_SetHandler(lua_State* L) {
     r = luaL_ref(L, LUA_REGISTRYINDEX);
     blocks.at(blockIdx)->luaEventRef = r;
     blockMutex.unlock(); // /block
+    return 0;
+}
 
+int l_BLOCK_Delete(lua_State* L) {
+    // Args
+    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
+
+    // Get block index
+    int blockIdx = getBlockIdx(getBlockID(L, 1));
+    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+
+    // Delete
+    blockMutex.lock();
+    delete blocks.at(blockIdx);
+    blocks.erase(blocks.begin() + blockIdx);
+    blockMutex.unlock();
+
+    // Redraw
+    bar->redraw();
+    return 0;
+}
+
+int l_BLOCK_Show(lua_State* L) {
+    // Args
+    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
+
+    // Get block index
+    int blockIdx = getBlockIdx(getBlockID(L, 1));
+    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+
+    // Set
+    blockMutex.lock();
+    blocks.at(blockIdx)->hidden = false;
+    blockMutex.unlock();
+
+    // Redraw
+    bar->redraw();
+    return 0;
+}
+
+int l_BLOCK_Hide(lua_State* L) {
+    // Args
+    if (!lua_istable(L, 1)) luaL_argerror(L, 1, "not a table");
+
+    // Get block index
+    int blockIdx = getBlockIdx(getBlockID(L, 1));
+    if (blockIdx < 0) luaL_argerror(L, 1, "not a block");
+
+    // Set
+    blockMutex.lock();
+    blocks.at(blockIdx)->hidden = true;
+    blockMutex.unlock();
+
+    // Redraw
+    bar->redraw();
     return 0;
 }
 
 int l_BAR_CreateBlock(lua_State* L) {
+    // Create a block and add to list
     blockMutex.lock();
-    int blockIdx = blocks.size();
-    blocks.push_back(new Block());
+    int blockID = blockIdCC++;
+    blocks.push_back(new Block(blockID));
     blockMutex.unlock();
 
+    // Create Block object
     // todo: learn the correct way to do this (metatables or something)
     lua_newtable(L);
     lua_pushinteger(L, 1);
-    lua_pushinteger(L, blockIdx);
+    lua_pushinteger(L, blockID); // todo: use userdata here instead of simply index 1
     lua_settable(L, -3);
     lua_pushstring(L, "SetText");
     lua_pushcfunction(L, l_BLOCK_SetText);
@@ -138,23 +211,39 @@ int l_BAR_CreateBlock(lua_State* L) {
     lua_pushstring(L, "SetHandler");
     lua_pushcfunction(L, l_BLOCK_SetHandler);
     lua_settable(L, -3);
+    lua_pushstring(L, "Delete");
+    lua_pushcfunction(L, l_BLOCK_Delete);
+    lua_settable(L, -3);
+    lua_pushstring(L, "Show");
+    lua_pushcfunction(L, l_BLOCK_Show);
+    lua_settable(L, -3);
+    lua_pushstring(L, "Hide");
+    lua_pushcfunction(L, l_BLOCK_Hide);
+    lua_settable(L, -3);
 
+    // Redraw
     bar->redraw();
     return 1;
 }
 
 int l_BAR_SetFont(lua_State* L) {
+    // Args
     if (!lua_isstring(L, 1)) luaL_argerror(L, 1, "not a string");
     if (!lua_isinteger(L, 2)) luaL_argerror(L, 2, "not an integer");
+
+    // Set
     bar->setFont(lua_tostring(L, 1), lua_tointeger(L, 2));
     return 0;
 }
 
 int l_BAR_ClearBlocks(lua_State* L) {
+    // Delete
     blockMutex.lock();
-    for (size_t i = 0; i < blocks.size(); i++) delete blocks.at(i); // todo: invalidate old lua references
+    for (size_t i = 0; i < blocks.size(); i++) delete blocks.at(i);
     blocks.clear();
     blockMutex.unlock();
+
+    // Redraw
     bar->redraw();
     return 0;
 }

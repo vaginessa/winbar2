@@ -8,6 +8,7 @@ void Bar::triggerEvent(int eventType, int xCoord) {
     // Find block index
     int width = this->width;
     for (int blockIdx = blocks->size() - 1; blockIdx >= 0; blockIdx--) {
+        if (blocks->at(blockIdx)->hidden) continue;
         if (xCoord >= width - blocks->at(blockIdx)->_width && xCoord < width) {
             // Add to event queue
             blocks->at(blockIdx)->events.push(eventType);
@@ -58,6 +59,7 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         blockMutex->lock();
         for (int blockIdx = blocks->size() - 1; blockIdx >= 0; blockIdx--) {
             block = blocks->at(blockIdx);
+            if (block->hidden) continue;
 
             // Draw
             SetTextColor(hdcBuffer, block->color);
