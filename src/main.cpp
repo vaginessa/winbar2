@@ -163,11 +163,11 @@ int l_BLOCK_Show(lua_State* L) {
 
     // Set
     blockMutex.lock();
-    blocks.at(blockIdx)->hidden = false;
+    if (blocks.at(blockIdx)->hidden) {
+        blocks.at(blockIdx)->hidden = false;
+        bar->redraw();
+    }
     blockMutex.unlock();
-
-    // Redraw
-    bar->redraw();
     return 0;
 }
 
@@ -181,11 +181,11 @@ int l_BLOCK_Hide(lua_State* L) {
 
     // Set
     blockMutex.lock();
-    blocks.at(blockIdx)->hidden = true;
+    if (!blocks.at(blockIdx)->hidden) {
+        blocks.at(blockIdx)->hidden = true;
+        bar->redraw();
+    }
     blockMutex.unlock();
-
-    // Redraw
-    bar->redraw();
     return 0;
 }
 
