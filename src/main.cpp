@@ -32,6 +32,13 @@ std::wstring s2ws(const std::string& str) {
     return wstrTo;
 }
 
+// Get SetLayeredWindowAttributes function
+typedef HWND (WINAPI* GCWProc)();
+HWND GetConsoleWindow() {
+    GCWProc proc = (GCWProc)GetProcAddress(GetModuleHandle("KERNEL32.DLL"), "GetConsoleWindow");
+    return proc();
+}
+
 long long mstime() {
     std::chrono::duration<double, std::milli> ms = std::chrono::high_resolution_clock::now().time_since_epoch();
     return ms.count();
@@ -261,7 +268,7 @@ int handleLuaError(lua_State* L, int result) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // Create a new hidden console
     AllocConsole();
-    ShowWindow(FindWindowA("ConsoleWindowClass", 0), SW_HIDE);
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
 
     // Create file if doesn't exists
     DWORD dwAttrib = GetFileAttributes("winbar.lua");
