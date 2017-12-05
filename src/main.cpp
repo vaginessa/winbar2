@@ -36,6 +36,15 @@ long long mstime() {
     return ms.count();
 }
 
+#ifdef __MINGW32__
+// GetConsoleWindow hack for MinGW
+typedef HWND (WINAPI* GCWProc)();
+HWND GetConsoleWindow() {
+    GCWProc proc = (GCWProc)GetProcAddress(GetModuleHandle("KERNEL32.DLL"), "GetConsoleWindow");
+    return proc();
+}
+#endif // __MINGW32__
+
 int l_timer(lua_State* L) {
     if (!lua_isinteger(L, 1)) return luaL_argerror(L, 1, "not an integer");
     if (!lua_isfunction(L, 2)) return luaL_argerror(L, 2, "not a function");
