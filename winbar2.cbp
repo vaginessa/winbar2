@@ -16,6 +16,10 @@
 					<Add option="-g" />
 					<Add directory="include" />
 				</Compiler>
+				<Linker>
+					<Add option="-llua" />
+					<Add option="-lgdi32" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/winbar2" prefix_auto="1" extension_auto="1" />
@@ -28,6 +32,25 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add option="-llua" />
+					<Add option="-lgdi32" />
+				</Linker>
+			</Target>
+			<Target title="Win">
+				<Option platforms="Windows;" />
+				<Option output="bin/Win/winbar2" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Win/" />
+				<Option type="1" />
+				<Option compiler="microsoft_visual_c_2015" />
+				<Compiler>
+					<Add directory="include" />
+					<Add directory="C:/CodeBlocks/MSVC/lua/include" />
+				</Compiler>
+				<Linker>
+					<Add library="lua53" />
+					<Add library="gdi32" />
+					<Add library="user32" />
+					<Add directory="C:/CodeBlocks/MSVC/lua" />
 				</Linker>
 			</Target>
 		</Build>
@@ -35,10 +58,6 @@
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 		</Compiler>
-		<Linker>
-			<Add option="-llua" />
-			<Add option="-lgdi32" />
-		</Linker>
 		<Unit filename="include/Bar.h" />
 		<Unit filename="include/Block.h" />
 		<Unit filename="include/default_winbar_lua.h" />

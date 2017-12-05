@@ -2,7 +2,6 @@
 #include <mutex>
 #include <vector>
 #include <chrono>
-#include <unistd.h>
 
 extern "C" {
 #include <lua.h>
@@ -30,13 +29,6 @@ std::wstring s2ws(const std::string& str) {
     std::wstring wstrTo( size_needed, 0 );
     MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
     return wstrTo;
-}
-
-// Get SetLayeredWindowAttributes function
-typedef HWND (WINAPI* GCWProc)();
-HWND GetConsoleWindow() {
-    GCWProc proc = (GCWProc)GetProcAddress(GetModuleHandle("KERNEL32.DLL"), "GetConsoleWindow");
-    return proc();
 }
 
 long long mstime() {
@@ -263,6 +255,20 @@ int handleLuaError(lua_State* L, int result) {
         return -1;
     }
     return 0;
+}
+
+// https://www.c-plusplus.net/forum/109539-full
+// Dirty copy-paste until I manually fix this
+void usleep(__int64 usec) {
+    HANDLE timer;
+    LARGE_INTEGER ft;
+
+    ft.QuadPart = -(10*usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {

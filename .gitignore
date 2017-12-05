@@ -6,3 +6,6 @@
 # generated directories
 bin/
 obj/
+
+### Other
+tools/
