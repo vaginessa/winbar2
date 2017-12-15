@@ -283,6 +283,7 @@ void usleep(__int64 usec) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
     // Create a new hidden console
     AllocConsole();
+    SetConsoleOutputCP(CP_UTF8);
     ShowWindow(GetConsoleWindow(), SW_HIDE);
 
     // Create file if doesn't exists
