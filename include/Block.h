@@ -13,7 +13,7 @@ public:
     int id;
     std::wstring text;
     COLORREF color;
-    int _rx, _width;
+    int _width;
     int luaEventRef;
     bool hidden;
 

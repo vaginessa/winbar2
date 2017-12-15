@@ -50,7 +50,7 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         Rectangle(hdcBuffer, drawRect.left, drawRect.top, drawRect.right, drawRect.bottom);
 
         // Text options
-        SetBkColor(hdcBuffer, 0);
+        SetBkMode(hdcBuffer, TRANSPARENT);
         SelectObject(hdcBuffer, font);
 
         // Draw blocks
@@ -67,7 +67,6 @@ LRESULT CALLBACK Bar::wndproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
             // Place next text
             GetTextExtentPoint32W(hdcBuffer, block->text.c_str(), block->text.length(), &textSize);
-            block->_rx = drawRect.right;
             block->_width = textSize.cx;
             drawRect.right -= textSize.cx;
         }
